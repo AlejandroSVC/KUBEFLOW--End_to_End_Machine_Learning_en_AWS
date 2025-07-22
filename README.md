@@ -4,7 +4,7 @@
 
 Esta guía describe un flujo de trabajo práctico para realizar una clasificación binaria XGBoost escalable en AWS, utilizando Kubeflow Pipelines para la orquestación y PySpark para el procesamiento distribuido de datos. Demostraremos las mejores prácticas para garantizar la robustez y la escalabilidad, incluyendo la lógica condicional basada en el tamaño de los datos y el manejo correcto de los archivos Parquet.
 
-## 1. Prerrequisitos y configuración
+## Prerrequisitos y configuración
 
 Clúster de AWS y Kubernetes
 
@@ -24,15 +24,11 @@ Bibliotecas de PySpark y XGBoost
 Instale los siguientes paquetes en su contenedor de entrenamiento de Docker o notebook de Kubeflow:
 pip install pyspark xgboost xgboost4j findspark
 
-## 2. Creación de una pipeline de Kubeflow
-
-Componente 1: Carga de datos con PySpark
-
-Objetivo: Cargar un archivo Parquet local, determinar el tamaño de los datos y enrutar la tubería según corresponda.
+# Creación de una pipeline de Kubeflow
 
 ## Paso 1: Carga de Datos con PySpark
 
-Objetivo: Cargar un archivo Parquet local, determinar el tamaño de los datos y dirigir el flujo de trabajo en consecuencia.
+Objetivo: Cargar un archivo Parquet local, determinar el tamaño de los datos y enrutar la pipeline según corresponda.
 
 ## data_loader.py
 ```
@@ -118,7 +114,7 @@ def binary_classification_pipeline(input_path: str, size_threshold: int):
 # Evitar sentencias if de Python en el código del pipeline; usar condiciones DSL de Kubeflow.
 ```
 
-# Paso 4: Entrenamiento Distribuido de XGBoost
+## Paso 4: Entrenamiento Distribuido de XGBoost
 
 Componente de Entrenamiento
 
@@ -257,9 +253,9 @@ Compensaciones de Escalabilidad:
 
 • El valor del umbral (1M filas) debe ajustarse según:
 
-        1. Dimensionalidad de las características
-        2. Tipos de instancia
-        3. Recursos del clúster
+1. Dimensionalidad de las características
+2. Tipos de instancia
+3. Recursos del clúster
 
 Para despliegue en producción:
 
