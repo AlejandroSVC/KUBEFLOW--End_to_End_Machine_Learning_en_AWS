@@ -6,23 +6,23 @@ Esta guía describe un flujo de trabajo práctico para realizar una clasificaci�
 
 ## Prerrequisitos y configuración
 
-Clúster de AWS y Kubernetes
+**Clúster de AWS y Kubernetes**
 
 •  Aprovisione un clúster de EKS (Elastic Kubernetes Service) en AWS con los nodos de trabajo necesarios (CPU/GPU según las necesidades de datos/computación previstas).
 
 •  Asegúrese de que los roles y permisos de AWS IAM estén configurados para su uso de EKS y Kubeflow.
 
-Implementación de Kubeflow
+**Implementación de Kubeflow**
 
 •  Implemente Kubeflow siguiendo la documentación oficial de Kubeflow.
 
 •  Confirme que las tuberías, notebooks y Katib de Kubeflow (para el ajuste de hiperparámetros) estén operativas.
 
-Almacenamiento S3
+**Almacenamiento S3**
 
 •  Configure un bucket S3 para cargar y guardar datos, artefactos intermedios y modelos entrenados (esto garantiza la escalabilidad y la portabilidad).
 
-Bibliotecas de PySpark y XGBoost
+**Bibliotecas de PySpark y XGBoost**
 
 Instale los siguientes paquetes en su contenedor de entrenamiento de Docker o notebook de Kubeflow:
 ```
@@ -54,7 +54,7 @@ def load_and_check_size(input_path: str, size_threshold: int = 1000000) -> str:
 
     # Bandera de enrutamiento basada en umbral
     if row_count < size_threshold:
-        return "small"        # El conjunto de datos cabe en procesamiento de un solo nodo
+        return "small"         # El conjunto de datos cabe en procesamiento de un solo nodo
     else:
         return "large"         # Requiere procesamiento distribuido
 ```
@@ -70,16 +70,16 @@ Ejemplo:
 ```
 def preprocess_data(input_path: str, output_path: str, mode: str):
     spark = SparkSession.builder.appName("Preprocessing").getOrCreate()
-    df = spark.read.parquet(input_path)       # Cargar datos de origen
+    df = spark.read.parquet(input_path)                      # Cargar datos de origen
 
     if mode == "small":
-        pdf = df.toPandas()                      # Convertir a DataFrame de pandas (recopila datos en el nodo principal)
+        pdf = df.toPandas()                                  # Convertir a DataFrame de pandas (recopila datos en el nodo principal)
         # ... cualquier preprocesamiento basado en pandas
         # ^ Usar pandas para operaciones complejas en un solo nodo (ej., preprocesamiento con scikit-learn)
-        pdf.to_parquet(output_path)    # Guardar como Parquet (local/S3)
+        pdf.to_parquet(output_path)                          # Guardar como Parquet (local/S3)
     else:
         # ... Transformaciones basadas en PySpark (ingeniería de características, fillna, filtrado, etc.)
-        df = df.dropna()                            # Ejemplo: Manejo distribuido de valores nulos
+        df = df.dropna()                                     # Ejemplo: Manejo distribuido de valores nulos
         # ^ Añadir ingeniería de características, escalado, etc. usando la API de DataFrame de Spark
         df.write.mode("overwrite").parquet(output_path)      # Escritura distribuida
         # ^ El modo 'overwrite' garantiza ejecuciones de pipeline idempotentes
@@ -129,54 +129,54 @@ Componente de Entrenamiento
 
 • Para datos grandes, entrada Parquet particionada, lanzar SparkXGBClassifier distribuido.
 
-Ejemplo de esqueleto de entrenamiento distribuido:
+**Ejemplo de esqueleto de entrenamiento distribuido:**
 ```
 # Entrenamiento Distribuido de XGBoost
-from xgboost.spark import SparkXGBClassifier  # Integración XGBoost4J-Spark
+from xgboost.spark import SparkXGBClassifier                 # Integración XGBoost4J-Spark
 
 def train_xgboost(input_path: str, mode: str, model_output: str):
     spark = SparkSession.builder.appName("XGBoostTrain").getOrCreate()
-    df = spark.read.parquet(input_path)      # Cargar datos preprocesados
+    df = spark.read.parquet(input_path)                      # Cargar datos preprocesados
 
     if mode == "single_node":
         # Convertir a Pandas para entrenamiento en un solo nodo
         pdf = df.toPandas()
         import xgboost as xgb
-        model = xgb.XGBClassifier()    # Clasificador estándar con API de scikit-learn
+        model = xgb.XGBClassifier()                          # Clasificador estándar con API de scikit-learn
         model.fit(pdf.drop('label',axis=1), pdf['label'])    # Entrenamiento en un solo nodo
         # Guardar modelo
-        model.save_model(model_output)    # Guardar en formato nativo de XGBoost
+        model.save_model(model_output)                       # Guardar en formato nativo de XGBoost
     else:
         # XGBoost distribuido usando XGBoost4J-Spark
         xgb_classifier = SparkXGBClassifier(
-            featuresCol="features",     # Nombre de la columna de características en Spark ML
-            labelCol="label",                  # Nombre de la columna de etiquetas
-            numWorkers=4,                   # Número de ejecutores de Spark para entrenamiento: ajustar según el clúster
-            maxDepth=6,                        # Hiperparámetro del modelo
-            objective='binary:logistic'   # Objetivo de clasificación binaria
+            featuresCol="features",                          # Nombre de la columna de características en Spark ML
+            labelCol="label",                                # Nombre de la columna de etiquetas
+            numWorkers=4,                                    # Número de ejecutores de Spark para entrenamiento: ajustar según el clúster
+            maxDepth=6,                                      # Hiperparámetro del modelo
+            objective='binary:logistic'                      # Objetivo de clasificación binaria
         )
-        model = xgb_classifier.fit(df)                                          # Entrenamiento distribuido en clúster de Spark
-        model.nativeBooster.save_model(model_output)    # Acceder al modelo subyacente
+        model = xgb_classifier.fit(df)                       # Entrenamiento distribuido en clúster de Spark
+        model.nativeBooster.save_model(model_output)         # Acceder al modelo subyacente
 
     spark.stop()
 
 
-# Ajustar numWorkers, particiones, etc. según el tamaño del clúster y el volumen de datos.
-# Asegurar siempre que los recursos del clúster de Spark estén configurados adecuadamente para el volumen de datos anticipado.
+•  Ajustar numWorkers, particiones, etc. según el tamaño del clúster y el volumen de datos.
+•  Asegurar siempre que los recursos del clúster de Spark estén configurados adecuadamente para el volumen de datos anticipado.
 
 # Mejores Prácticas de Kubeflow
 ```
-• Containerizar cada componente en una imagen Docker con todas las dependencias y subirla a un registro.
+•  Containerizar cada componente en una imagen Docker con todas las dependencias y subirla a un registro.
 
-• Usar Parámetros de Pipeline para entradas dinámicas, como ruta del archivo de datos o tamaño del clúster.
+•  Usar Parámetros de Pipeline para entradas dinámicas, como ruta del archivo de datos o tamaño del clúster.
 
-• Los datos de entrada/salida deben residir en ubicaciones accesibles desde S3 para portabilidad y escalabilidad del pipeline.
+•  Los datos de entrada/salida deben residir en ubicaciones accesibles desde S3 para portabilidad y escalabilidad del pipeline.
 
-• Aprovechar la visualización del pipeline para depuración, seguimiento de experimentos y reproducibilidad en la interfaz de Kubeflow.
+•  Aprovechar la visualización del pipeline para depuración, seguimiento de experimentos y reproducibilidad en la interfaz de Kubeflow.
 
-• Usar Conditionals y ParallelFor en el pipeline para flujos de trabajo escalables y modulares, como se muestra arriba.
+•  Usar Conditionals y ParallelFor en el pipeline para flujos de trabajo escalables y modulares, como se muestra arriba.
 
-• Registrar métricas en cada etapa, especialmente artefactos de entrenamiento y evaluación, para seguimiento y mejores prácticas de registro de modelos.
+•  Registrar métricas en cada etapa, especialmente artefactos de entrenamiento y evaluación, para seguimiento y mejores prácticas de registro de modelos.
 
 # Ejemplo: Esqueleto Completo del Pipeline (Kubeflow DSL)
 ```
@@ -204,86 +204,86 @@ def pipeline(input_parquet: str, size_threshold: int = 1000000):
         train_task = train_xgboost_op('prep_large.parquet', 'distributed', 'model_large.bin')
 
 
-# Reemplazar funciones _op con kfp.components.create_component_from_func o contenedores personalizados.
-# Parametrizar la asignación de recursos según los tipos de instancia de AWS.
+•  Reemplazar funciones _op con kfp.components.create_component_from_func o contenedores personalizados.
+•  Parametrizar la asignación de recursos según los tipos de instancia de AWS.
 
 ```
-Consideraciones Técnicas Clave:
+## Consideraciones Técnicas Claves:
 
-Spark en Kubernetes:
+**Spark en Kubernetes:**
 
-• SparkSession se ejecuta en Kubernetes mediante el operador Spark-on-K8s
+•  SparkSession se ejecuta en Kubernetes mediante el operador Spark-on-K8s
 
-• Asignación de recursos controlada mediante parámetros de spark-submit (no mostrado)
+•  Asignación de recursos controlada mediante parámetros de spark-submit (no mostrado)
 
-• Referencia: Integración de Spark con Kubernetes
+•  Referencia: Integración de Spark con Kubernetes
 
-XGBoost Distribuido:
+**XGBoost Distribuido:**
 
-• Usa XGBoost4J-Spark para entrenamiento distribuido
+•  Usa XGBoost4J-Spark para entrenamiento distribuido
 
-• Requiere Java 8+ y versiones compatibles de Spark/XGBoost
+•  Requiere Java 8+ y versiones compatibles de Spark/XGBoost
 
-• Referencia: Guía de XGBoost4J-Spark
+•  Referencia: Guía de XGBoost4J-Spark
 
-Mejores Prácticas de Kubeflow:
+** Mejores Prácticas de Kubeflow:**
 
-• dsl.Condition permite enrutamiento dinámico del pipeline
+•  dsl.Condition permite enrutamiento dinámico del pipeline
 
-• Las salidas de los componentes se pasan mediante el atributo output
+•  Las salidas de los componentes se pasan mediante el atributo output
 
-• Referencia: DSL de Kubeflow Pipelines
+•  Referencia: DSL de Kubeflow Pipelines
 
-Integración con AWS:
+**Integración con AWS:**
 
-• Usar rutas S3 (s3a://) para datos de entrada/salida
+•  Usar rutas S3 (s3a://) para datos de entrada/salida
 
-• Configurar credenciales de AWS para Hadoop en la configuración de Spark
+•  Configurar credenciales de AWS para Hadoop en la configuración de Spark
 
-• Referencia: Integración de Spark con S3
+•  Referencia: Integración de Spark con S3
 
-Consideraciones de Rendimiento:
+**Consideraciones de Rendimiento:**
 
-• df.count() es costoso para conjuntos de datos grandes - considerar muestreo
+•  df.count() es costoso para conjuntos de datos grandes - considerar muestreo
 
-• Parquet particionado permite lecturas/escrituras paralelas
+•  Parquet particionado permite lecturas/escrituras paralelas
 
-• Ajustar numWorkers según el tamaño del clúster
+•  Ajustar numWorkers según el tamaño del clúster
 
-Compensaciones de Escalabilidad:
+**Compensaciones de Escalabilidad:**
 
-• Ruta de un solo nodo: Más simple pero limitada por la memoria del driver
+•  Ruta de un solo nodo: Más simple pero limitada por la memoria del driver
 
-• Ruta distribuida: Mayor sobrecarga pero maneja datos a escala de TB
+•  Ruta distribuida: Mayor sobrecarga pero maneja datos a escala de TB
 
-• El valor del umbral (1M filas) debe ajustarse según:
+•  El valor del umbral (1M filas) debe ajustarse según:
 
 1. Dimensionalidad de las características
 2. Tipos de instancia
 3. Recursos del clúster
 
-Para despliegue en producción:
+**Para despliegue en producción:**
 
-• Containerizar componentes con Docker
+•  Containerizar componentes con Docker
 
-• Configurar plantillas de recursos de Spark
+•  Configurar plantillas de recursos de Spark
 
-• Añadir etapas de validación/despliegue del modelo
+•  Añadir etapas de validación/despliegue del modelo
 
-• Implementar monitoreo con Amazon CloudWatch
+•  Implementar monitoreo con Amazon CloudWatch
 
-Recomendaciones
+## Recomendaciones
 
-• Usar PySpark para procesamiento de datos escalable y distribuido. Nunca usar collect() o convertir conjuntos de datos grandes a Pandas.
+•  Usar PySpark para procesamiento de datos escalable y distribuido. Nunca usar collect() o convertir conjuntos de datos grandes a Pandas.
 
-• Aprovechar XGBoost4J-Spark para entrenamiento distribuido real, especialmente para conjuntos de datos que no caben en memoria.
+•  Aprovechar XGBoost4J-Spark para entrenamiento distribuido real, especialmente para conjuntos de datos que no caben en memoria.
 
-• Diseñar pipelines de Kubeflow con condicionales para enrutar automáticamente datos pequeños o grandes a los recursos y rutas de código apropiados.
+•  Diseñar pipelines de Kubeflow con condicionales para enrutar automáticamente datos pequeños o grandes a los recursos y rutas de código apropiados.
 
-• Siempre containerizar componentes y usar S3 para entrada/salida para portabilidad.
+•  Siempre containerizar componentes y usar S3 para entrada/salida para portabilidad.
 
-• Ajustar el clúster y el paralelismo de entrenamiento según el tamaño del conjunto de datos y los nodos EC2/GPU/CPU disponibles.
+•  Ajustar el clúster y el paralelismo de entrenamiento según el tamaño del conjunto de datos y los nodos EC2/GPU/CPU disponibles.
 
-• Monitorear y registrar todas las métricas para un seguimiento robusto de experimentos y reproducibilidad.
+•  Monitorear y registrar todas las métricas para un seguimiento robusto de experimentos y reproducibilidad.
 
-• Usar la documentación oficial de XGBoost con Spark y los patrones distribuidos y condicionales de Kubeflow como referencias fundamentales.
+•  Usar la documentación oficial de XGBoost con Spark y los patrones distribuidos y condicionales de Kubeflow como referencias fundamentales.
