@@ -8,22 +8,27 @@ Esta guía describe un flujo de trabajo práctico para realizar una clasificaci�
 
 Clúster de AWS y Kubernetes
 
-• Aprovisione un clúster de EKS (Elastic Kubernetes Service) en AWS con los nodos de trabajo necesarios (CPU/GPU según las necesidades de datos/computación previstas).
-• Asegúrese de que los roles y permisos de AWS IAM estén configurados para su uso de EKS y Kubeflow.
+•  Aprovisione un clúster de EKS (Elastic Kubernetes Service) en AWS con los nodos de trabajo necesarios (CPU/GPU según las necesidades de datos/computación previstas).
+
+•  Asegúrese de que los roles y permisos de AWS IAM estén configurados para su uso de EKS y Kubeflow.
 
 Implementación de Kubeflow
 
-• Implemente Kubeflow siguiendo la documentación oficial de Kubeflow. • Confirme que las tuberías, notebooks y Katib de Kubeflow (para el ajuste de hiperparámetros) estén operativas.
+•  Implemente Kubeflow siguiendo la documentación oficial de Kubeflow.
+
+•  Confirme que las tuberías, notebooks y Katib de Kubeflow (para el ajuste de hiperparámetros) estén operativas.
 
 Almacenamiento S3
 
-• Configure un bucket S3 para cargar y guardar datos, artefactos intermedios y modelos entrenados (esto garantiza la escalabilidad y la portabilidad).
+•  Configure un bucket S3 para cargar y guardar datos, artefactos intermedios y modelos entrenados (esto garantiza la escalabilidad y la portabilidad).
 
 Bibliotecas de PySpark y XGBoost
 
 Instale los siguientes paquetes en su contenedor de entrenamiento de Docker o notebook de Kubeflow:
+```
+bash
 pip install pyspark xgboost xgboost4j findspark
-
+```
 # Creación de una pipeline de Kubeflow
 
 ## Paso 1: Carga de Datos con PySpark
