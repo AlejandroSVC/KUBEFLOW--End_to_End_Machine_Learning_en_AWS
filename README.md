@@ -204,8 +204,8 @@ def pipeline(input_parquet: str, size_threshold: int = 1000000):
         train_task = train_xgboost_op('prep_large.parquet', 'distributed', 'model_large.bin')
 
 
-•  Reemplazar funciones _op con kfp.components.create_component_from_func o contenedores personalizados.
-•  Parametrizar la asignación de recursos según los tipos de instancia de AWS.
+# Reemplazar funciones _op con kfp.components.create_component_from_func o contenedores personalizados.
+# Parametrizar la asignación de recursos según los tipos de instancia de AWS.
 
 ```
 ## Consideraciones Técnicas Claves:
