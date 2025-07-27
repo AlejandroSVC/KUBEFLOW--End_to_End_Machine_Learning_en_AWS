@@ -1,6 +1,8 @@
 # XGBoost en AWS con Kubeflow
 
-## Clasificación binaria XGBoost mínima, robusta y escalable en AWS con Kubeflow y PySpark
+![banner_kubeflow](docs/assets/images/banner_kubeflow.jpg)
+
+## Machine learning escalable y distribuido en AWS con Kubeflow y PySpark
 
 Esta guía describe un flujo de trabajo práctico para realizar una clasificación binaria XGBoost escalable en AWS, utilizando Kubeflow Pipelines para la orquestación y PySpark para el procesamiento distribuido de datos. Demostraremos las mejores prácticas para garantizar la robustez y la escalabilidad, incluyendo la lógica condicional basada en el tamaño de los datos y el manejo correcto de los archivos Parquet.
 
